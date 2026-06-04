@@ -1,0 +1,27 @@
+services:
+  backend:
+    image: ${DOCKERHUB_USERNAME}/qfai-backend:latest
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=sqlite:////app/data/qfai.db
+    volumes:
+      - db_data:/app/data
+    networks:
+      - qfai-net
+
+  nginx:
+    image: ${DOCKERHUB_USERNAME}/qfai-nginx:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - qfai-net
+
+volumes:
+  db_data:
+
+networks:
+  qfai-net:
+    driver: bridge

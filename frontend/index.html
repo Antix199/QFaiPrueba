@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qfai — Descubre y Comparte Panoramas Locales</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts (Outfit) -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Leaflet.js CSS (Maps) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    
+    <style>
+        :root {
+            --bg-primary: #030712;
+            --bg-card: #0b0f19;
+            --bg-glass: rgba(17, 24, 39, 0.7);
+            --border-glass: rgba(255, 255, 255, 0.06);
+            --text-main: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --accent-green: #10b981;
+            --accent-cyan: #06b6d4;
+            --accent-gradient: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+        }
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .glass-navbar {
+            background: rgba(3, 7, 18, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-glass);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.6rem;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: 16px;
+            color: var(--text-main);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-gradient {
+            background: var(--accent-gradient);
+            color: #ffffff;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        .btn-gradient:hover {
+            opacity: 0.9;
+            color: #ffffff;
+            transform: scale(1.02);
+        }
+
+        .btn-outline-custom {
+            border: 1px solid var(--accent-green);
+            color: var(--text-main);
+            font-weight: 500;
+            border-radius: 10px;
+            background-color: transparent;
+            transition: background-color 0.2s;
+        }
+
+        .btn-outline-custom:hover {
+            background-color: rgba(16, 153, 129, 0.1);
+            color: var(--accent-green);
+        }
+
+        #map {
+            height: 380px;
+            border-radius: 16px;
+            border: 1px solid var(--border-glass);
+            z-index: 10;
+        }
+
+        .badge-category {
+            background-color: rgba(6, 182, 212, 0.12);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .badge-active {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .badge-cancelled {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .form-control, .form-select {
+            background-color: rgba(3, 7, 18, 0.5);
+            border: 1px solid var(--border-glass);
+            border-radius: 10px;
+            color: var(--text-main);
+            padding: 10px 14px;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background-color: rgba(3, 7, 18, 0.8);
+            border-color: var(--accent-green);
+            color: var(--text-main);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 4px;
+        }
+        
+        .hero-section {
+            background: radial-gradient(circle at top right, rgba(6, 182, 212, 0.08), transparent 45%),
+                        radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.08), transparent 45%);
+            padding: 40px 0;
+            border-bottom: 1px solid var(--border-glass);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- React and Babel Standalone CDNs -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Leaflet.js Library (Maps) -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- React App logic code -->
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        const API_BASE = '/api';
+
+        function App() {
+            const [user, setUser] = useState(null);
+            const [token, setToken] = useState(localStorage.getItem('qfai_token'));
+            const [panoramas, setPanoramas] = useState([]);
+            const [selectedPan, setSelectedPan] = useState(null);
+            const [view, setView] = useState('list'); // list, create, profile, auth
+            const [authMode, setAuthMode] = useState('login'); // login, register
+            
+            const [filterCategory, setFilterCategory] = useState('Todas');
+            const [filterCity, setFilterCity] = useState('');
+            
+            const [authUsername, setAuthUsername] = useState('');
+            const [authEmail, setAuthEmail] = useState('');
+            const [authPassword, setAuthPassword] = useState('');
+            
+            const [panTitle, setPanTitle] = useState('');
+            const [panDesc, setPanDesc] = useState('');
+            const [panCategory, setPanCategory] = useState('Deporte');
+            const [panDate, setPanDate] = useState('');
+            const [panSpots, setPanSpots] = useState(0);
+            const [panLocation, setPanLocation] = useState('');
+            const [panLat, setPanLat] = useState(-38.7408);
+            const [panLng, setPanLng] = useState(-72.6172);
+
+            const mapRef = useRef(null);
+            const markersRef = useRef([]);
+
+            useEffect(() => {
+                if (token) {
+                    fetch(`${API_BASE}/auth/me?token=${token}`)
+                        .then(res => {
+                            if (res.ok) return res.json();
+                            throw new Error('Token expirado');
+                        })
+                        .then(data => {
+                            setUser(data);
+                            localStorage.setItem('qfai_token', token);
+                        })
+                        .catch(err => {
+                            logout();
+                        });
+                }
+            }, [token]);
+
+            const fetchPanoramas = () => {
+                let url = `${API_BASE}/panoramas?category=${filterCategory}`;
+                if (filterCity) {
+                    url += `&city=${encodeURIComponent(filterCity)}`;
+                }
+                if (token) {
+                    url += `&token=${token}`;
+                }
+                fetch(url)
+                    .then(res => res.json())
+                    .then(data => {
+                        setPanoramas(data);
+                    })
+                    .catch(err => console.error(err));
+            };
+
+            useEffect(() => {
+                fetchPanoramas();
+            }, [filterCategory, filterCity, token]);
+
+            useEffect(() => {
+                if (view === 'list') {
+                    if (!mapRef.current) {
+                        mapRef.current = L.map('map').setView([-38.7408, -72.6172], 12);
+                        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                            attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+                        }).addTo(mapRef.current);
+                    }
+
+                    markersRef.current.forEach(m => mapRef.current.removeLayer(m));
+                    markersRef.current = [];
+
+                    panoramas.forEach(pan => {
+                        const marker = L.marker([pan.latitude, pan.longitude])
+                            .addTo(mapRef.current)
+                            .bindPopup(`
+                                <div style="color: #030712; font-family: 'Outfit', sans-serif;">
+                                    <h6 style="margin: 0; font-weight: 700;">${pan.title}</h6>
+                                    <span style="font-size: 0.75rem; color: #10b981; font-weight: 600; text-transform: uppercase;">${pan.category}</span>
+                                    <p style="margin: 5px 0 0 0; font-size: 0.8rem;">📍 ${pan.location}</p>
+                                    <button class="btn btn-sm btn-dark mt-2 w-100" id="popup-btn-${pan.id}">Ver detalles</button>
+                                </div>
+                            `);
+                        
+                        marker.on('popupopen', () => {
+                            document.getElementById(`popup-btn-${pan.id}`).addEventListener('click', () => {
+                                viewDetail(pan.id);
+                            });
+                        });
+
+                        markersRef.current.push(marker);
+                    });
+                } else if (view === 'create') {
+                    setTimeout(() => {
+                        const createMap = L.map('map-create').setView([panLat, panLng], 12);
+                        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                            attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+                        }).addTo(createMap);
+
+                        let selectionMarker = L.marker([panLat, panLng], { draggable: true }).addTo(createMap);
+
+                        selectionMarker.on('dragend', () => {
+                            const pos = selectionMarker.getLatLng();
+                            setPanLat(pos.lat);
+                            setPanLng(pos.lng);
+                        });
+
+                        createMap.on('click', (e) => {
+                            selectionMarker.setLatLng(e.latlng);
+                            setPanLat(e.latlng.lat);
+                            setPanLng(e.latlng.lng);
+                        });
+                    }, 100);
+                }
+            }, [view, panoramas]);
+
+            const viewDetail = (id) => {
+                let url = `${API_BASE}/panoramas/${id}`;
+                if (token) {
+                    url += `?token=${token}`;
+                }
+                fetch(url)
+                    .then(res => res.json())
+                    .then(data => {
+                        setSelectedPan(data);
+                        setView('detail');
+                    })
+                    .catch(err => alert("Error al consultar detalles"));
+            };
+
+            const logout = () => {
+                setUser(null);
+                setToken(null);
+                localStorage.removeItem('qfai_token');
+                setView('list');
+            };
+
+            const handleAuth = async (e) => {
+                e.preventDefault();
+                const url = authMode === 'login' ? `${API_BASE}/auth/login` : `${API_BASE}/auth/register`;
+                const body = authMode === 'login' 
+                    ? { email: authEmail, password: authPassword }
+                    : { username: authUsername, email: authEmail, password: authPassword };
+
+                try {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.detail || "Error en la autenticación");
+
+                    setToken(data.token);
+                    setUser(data.user);
+                    localStorage.setItem('qfai_token', data.token);
+                    alert(`Sesión iniciada con éxito. ¡Hola, ${data.user.username}!`);
+                    setView('list');
+                } catch (err) {
+                    alert(err.message);
+                }
+            };
+
+            const handleCreate = async (e) => {
+                e.preventDefault();
+                const body = {
+                    title: panTitle,
+                    description: panDesc,
+                    category: panCategory,
+                    date_time: panDate,
+                    spots: parseInt(panSpots),
+                    location: panLocation,
+                    latitude: parseFloat(panLat),
+                    longitude: parseFloat(panLng)
+                };
+
+                try {
+                    const res = await fetch(`${API_BASE}/panoramas?token=${token}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.detail || "Error al crear panorama");
+
+                    alert("¡Panorama publicado con éxito!");
+                    setPanTitle('');
+                    setPanDesc('');
+                    setPanLocation('');
+                    setView('list');
+                    fetchPanoramas();
+                } catch (err) {
+                    alert(err.message);
+                }
+            };
+
+            const toggleJoin = async (id, joined) => {
+                if (!token) {
+                    alert("Por favor inicia sesión para unirte a panoramas");
+                    setView('auth');
+                    return;
+                }
+                const url = joined 
+                    ? `${API_BASE}/panoramas/${id}/leave?token=${token}`
+                    : `${API_BASE}/panoramas/${id}/join?token=${token}`;
+                try {
+                    const res = await fetch(url, { method: 'POST' });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.detail);
+                    alert(data.message);
+                    viewDetail(id);
+                    fetchPanoramas();
+                } catch (err) {
+                    alert(err.message);
+                }
+            };
+
+            const cancelPanorama = async (id) => {
+                if (!confirm("¿Está seguro que desea cancelar este panorama?")) return;
+                try {
+                    const res = await fetch(`${API_BASE}/panoramas/${id}?token=${token}`, { method: 'DELETE' });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.detail);
+                    alert("Panorama cancelado");
+                    setView('list');
+                    fetchPanoramas();
+                } catch (err) {
+                    alert(err.message);
+                }
+            };
+
+            return (
+                <div>
+                    <nav className="navbar navbar-expand-lg glass-navbar navbar-dark">
+                        <div className="container">
+                            <span className="navbar-brand cursor-pointer" onClick={() => setView('list')}>
+                                <i className="bi bi-map-fill me-2"></i>Qfai
+                            </span>
+                            <div className="d-flex align-items-center">
+                                <button className="btn btn-sm btn-link text-white me-3 d-lg-block d-none" onClick={() => setView('list')}>
+                                    Explorar
+                                </button>
+                                {user ? (
+                                    <div className="d-flex align-items-center">
+                                        <button className="btn btn-sm btn-gradient me-2" onClick={() => setView('create')}>
+                                            <i className="bi bi-plus-lg me-1"></i>Publicar
+                                        </button>
+                                        <button className="btn btn-sm btn-outline-light me-2" onClick={() => setView('profile')}>
+                                            <i className="bi bi-person-fill"></i> {user.username}
+                                        </button>
+                                        <button className="btn btn-sm btn-danger" onClick={logout}>
+                                            Salir
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button className="btn btn-sm btn-gradient" onClick={() => { setView('auth'); setAuthMode('login'); }}>
+                                        Iniciar Sesión
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </nav>
+
+                    {view === 'list' && (
+                        <div>
+                            <div className="hero-section text-center text-lg-start">
+                                <div className="container">
+                                    <div className="row align-items-center">
+                                        <div className="col-lg-6">
+                                            <h1 className="display-4 fw-bold mb-3">Encuentra tu próximo panorama local</h1>
+                                            <p className="lead text-secondary mb-4">
+                                                Explora planes deportivos, culturales y sociales creados por personas de tu comunidad. Únete con un solo clic.
+                                            </p>
+                                        </div>
+                                        <div className="col-lg-6">
+                                            <div id="map"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="container my-5">
+                                <div className="row mb-4">
+                                    <div className="col-md-4 mb-3">
+                                        <label className="form-label text-secondary small">Filtrar por Categoría</label>
+                                        <select className="form-select" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
+                                            <option value="Todas">Todas las categorías</option>
+                                            <option value="Deporte">Deporte</option>
+                                            <option value="Música">Música</option>
+                                            <option value="Arte y cultura">Arte y cultura</option>
+                                            <option value="Gastronomía">Gastronomía</option>
+                                            <option value="Naturaleza">Naturaleza</option>
+                                            <option value="Social">Social</option>
+                                            <option value="Juegos">Juegos</option>
+                                            <option value="Otro">Otro</option>
+                                        </select>
+                                    </div>
+                                    <div className="col-md-4 mb-3">
+                                        <label className="form-label text-secondary small">Buscar por Ciudad</label>
+                                        <input type="text" className="form-control" placeholder="Ej: Temuco" value={filterCity} onChange={(e) => setFilterCity(e.target.value)} />
+                                    </div>
+                                </div>
+
+                                <div className="row">
+                                    {panoramas.length === 0 ? (
+                                        <div className="col-12 text-center py-5 text-secondary">
+                                            <i className="bi bi-info-circle display-4 mb-3 d-block text-cyan"></i>
+                                            No se encontraron panoramas activos que coincidan con los filtros.
+                                        </div>
+                                    ) : (
+                                        panoramas.map(pan => (
+                                            <div className="col-md-4 mb-4" key={pan.id}>
+                                                <div className="card h-100 p-4 d-flex flex-column justify-content-between">
+                                                    <div>
+                                                        <div className="d-flex justify-content-between align-items-start mb-3">
+                                                            <span className="badge-category">{pan.category}</span>
+                                                            {pan.spots > 0 ? (
+                                                                <span className="small text-secondary">
+                                                                    <i className="bi bi-people-fill me-1"></i>
+                                                                    {pan.participants_count}/{pan.spots} cupos
+                                                                </span>
+                                                            ) : (
+                                                                <span className="small text-accent-green">Cupos ilimitados</span>
+                                                            )}
+                                                        </div>
+                                                        <h4 className="fw-bold mb-2">{pan.title}</h4>
+                                                        <p className="text-secondary small mb-3">
+                                                            📅 {new Date(pan.date_time).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}
+                                                        </p>
+                                                        <p className="text-secondary small mb-3">
+                                                            📍 {pan.location}
+                                                        </p>
+                                                    </div>
+                                                    <div className="d-flex gap-2 mt-4">
+                                                        <button className="btn btn-outline-custom flex-grow-1" onClick={() => viewDetail(pan.id)}>
+                                                            Ver más
+                                                        </button>
+                                                        <button 
+                                                            className={`btn flex-grow-1 ${pan.is_joined ? 'btn-danger' : 'btn-gradient'}`}
+                                                            onClick={() => toggleJoin(pan.id, pan.is_joined)}
+                                                            disabled={pan.organizer_id === user?.id}
+                                                        >
+                                                            {pan.is_joined ? 'Salir' : 'Unirme'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {view === 'auth' && (
+                        <div className="container my-5 py-5">
+                            <div className="row justify-content-center">
+                                <div className="col-md-4">
+                                    <div className="card p-4">
+                                        <h3 className="fw-bold text-center mb-4">{authMode === 'login' ? 'Iniciar Sesión' : 'Registrarse en Qfai'}</h3>
+                                        <form onSubmit={handleAuth}>
+                                            {authMode === 'register' && (
+                                                <div className="mb-3">
+                                                    <label className="form-label small">Nombre de Usuario</label>
+                                                    <input type="text" className="form-control" value={authUsername} onChange={(e) => setAuthUsername(e.target.value)} required />
+                                                </div>
+                                            )}
+                                            <div className="mb-3">
+                                                <label className="form-label small">Correo electrónico</label>
+                                                <input type="email" className="form-control" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} required />
+                                            </div>
+                                            <div className="mb-4">
+                                                <label className="form-label small">Contraseña</label>
+                                                <input type="password" className="form-control" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} required />
+                                            </div>
+                                            <button type="submit" className="btn btn-gradient w-100 mb-3">{authMode === 'login' ? 'Ingresar' : 'Crear Cuenta'}</button>
+                                        </form>
+                                        <button className="btn btn-link text-secondary w-100 small" onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}>
+                                            {authMode === 'login' ? '¿No tienes cuenta? Regístrate aquí' : '¿Ya tienes cuenta? Inicia sesión'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {view === 'create' && (
+                        <div className="container my-5">
+                            <div className="row justify-content-center">
+                                <div className="col-md-6">
+                                    <div className="card p-4">
+                                        <h3 className="fw-bold mb-4">Publicar nuevo panorama</h3>
+                                        <form onSubmit={handleCreate}>
+                                            <div className="mb-3">
+                                                <label className="form-label small">Título del panorama</label>
+                                                <input type="text" className="form-control" placeholder="Ej: Running nocturno parque" value={panTitle} onChange={(e) => setPanTitle(e.target.value)} required />
+                                            </div>
+                                            <div className="mb-3">
+                                                <label className="form-label small">Descripción</label>
+                                                <textarea className="form-control" rows="3" placeholder="Describe qué harán, qué llevar..." value={panDesc} onChange={(e) => setPanDesc(e.target.value)}></textarea>
+                                            </div>
+                                            <div className="row">
+                                                <div className="col-6 mb-3">
+                                                    <label className="form-label small">Categoría</label>
+                                                    <select className="form-select" value={panCategory} onChange={(e) => setPanCategory(e.target.value)}>
+                                                        <option value="Deporte">Deporte</option>
+                                                        <option value="Música">Música</option>
+                                                        <option value="Arte y cultura">Arte y cultura</option>
+                                                        <option value="Gastronomía">Gastronomía</option>
+                                                        <option value="Naturaleza">Naturaleza</option>
+                                                        <option value="Social">Social</option>
+                                                        <option value="Juegos">Juegos</option>
+                                                        <option value="Otro">Otro</option>
+                                                    </select>
+                                                </div>
+                                                <div className="col-6 mb-3">
+                                                    <label className="form-label small">Fecha y hora</label>
+                                                    <input type="datetime-local" className="form-control" value={panDate} onChange={(e) => setPanDate(e.target.value)} required />
+                                                </div>
+                                            </div>
+                                            <div className="mb-3">
+                                                <label className="form-label small">Cupos disponibles (0 = ilimitado)</label>
+                                                <input type="number" className="form-control" min="0" value={panSpots} onChange={(e) => setPanSpots(e.target.value)} />
+                                            </div>
+                                            <div className="mb-3">
+                                                <label className="form-label small">Dirección / Lugar de Referencia</label>
+                                                <input type="text" className="form-control" placeholder="Ej: Temuco, Canchas Sintéticas German Becker" value={panLocation} onChange={(e) => setPanLocation(e.target.value)} required />
+                                            </div>
+                                            
+                                            <div className="mb-4">
+                                                <label className="form-label small">Seleccionar ubicación en el mapa</label>
+                                                <div id="map-create" style={{ height: '220px', borderRadius: '10px' }} className="mb-2"></div>
+                                                <span className="small text-secondary">Coord: {panLat.toFixed(5)}, {panLng.toFixed(5)}</span>
+                                            </div>
+
+                                            <div className="d-flex gap-2">
+                                                <button type="button" className="btn btn-outline-light flex-grow-1" onClick={() => setView('list')}>Cancelar</button>
+                                                <button type="submit" className="btn btn-gradient flex-grow-1">Publicar Panorama</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {view === 'detail' && selectedPan && (
+                        <div className="container my-5">
+                            <div className="row justify-content-center">
+                                <div className="col-md-8">
+                                    <div className="card p-4">
+                                        <div className="d-flex justify-content-between align-items-center mb-4">
+                                            <span className="badge-category">{selectedPan.category}</span>
+                                            {selectedPan.status === 'cancelado' ? (
+                                                <span className="badge-category badge-cancelled">Cancelado</span>
+                                            ) : (
+                                                <span className="badge-category badge-active">Activo</span>
+                                            )}
+                                        </div>
+                                        <h2 className="fw-bold mb-3">{selectedPan.title}</h2>
+                                        <p className="lead text-secondary mb-4">{selectedPan.description || 'Sin descripción adicional.'}</p>
+                                        
+                                        <div className="row mb-4">
+                                            <div className="col-md-6 mb-3">
+                                                <h6 className="text-secondary small uppercase">Organizador</h6>
+                                                <p className="fw-bold"><i className="bi bi-person-circle me-2"></i>{selectedPan.organizer_name}</p>
+                                            </div>
+                                            <div className="col-md-6 mb-3">
+                                                <h6 className="text-secondary small uppercase">Fecha y Hora</h6>
+                                                <p className="fw-bold">📅 {new Date(selectedPan.date_time).toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' })}</p>
+                                            </div>
+                                            <div className="col-md-6 mb-3">
+                                                <h6 className="text-secondary small uppercase">Ubicación</h6>
+                                                <p className="fw-bold">📍 {selectedPan.location}</p>
+                                            </div>
+                                            <div className="col-md-6 mb-3">
+                                                <h6 className="text-secondary small uppercase">Participantes registrados</h6>
+                                                <p className="fw-bold">
+                                                    <i className="bi bi-people-fill me-2"></i>
+                                                    {selectedPan.spots > 0 
+                                                        ? `${selectedPan.participants_count} / ${selectedPan.spots} registrados` 
+                                                        : `${selectedPan.participants_count} registrados`}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="d-flex gap-2">
+                                            <button className="btn btn-outline-light flex-grow-1" onClick={() => setView('list')}>
+                                                Volver
+                                            </button>
+                                            
+                                            {selectedPan.organizer_id === user?.id ? (
+                                                selectedPan.status === 'activo' && (
+                                                    <button className="btn btn-danger flex-grow-1" onClick={() => cancelPanorama(selectedPan.id)}>
+                                                        Cancelar Panorama
+                                                    </button>
+                                                )
+                                            ) : (
+                                                selectedPan.status === 'activo' && (
+                                                    <button 
+                                                        className={`btn flex-grow-1 ${selectedPan.is_joined ? 'btn-danger' : 'btn-gradient'}`}
+                                                        onClick={() => toggleJoin(selectedPan.id, selectedPan.is_joined)}
+                                                    >
+                                                        {selectedPan.is_joined ? 'Salir del panorama' : 'Anotarme en este panorama'}
+                                                    </button>
+                                                )
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {view === 'profile' && (
+                        <div className="container my-5">
+                            <h2 className="fw-bold mb-4">Mi Perfil</h2>
+                            <div className="row">
+                                <div className="col-md-4 mb-4">
+                                    <div className="card p-4 text-center">
+                                        <i className="bi bi-person-circle display-1 mb-3 text-cyan"></i>
+                                        <h4 className="fw-bold mb-1">{user?.username}</h4>
+                                        <p className="text-secondary small">{user?.email}</p>
+                                    </div>
+                                </div>
+                                <div className="col-md-8">
+                                    <div className="card p-4 mb-4">
+                                        <h4 className="fw-bold mb-3"><i className="bi bi-bookmark-star-fill text-accent-green me-2"></i>Panoramas que Organizo</h4>
+                                        <p className="small text-secondary">Listado de eventos de los cuales eres el creador principal.</p>
+                                        
+                                        <div className="table-responsive">
+                                            <table className="table table-dark table-striped table-hover mt-3">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Título</th>
+                                                        <th>Categoría</th>
+                                                        <th>Fecha</th>
+                                                        <th>Estado</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {panoramas.filter(p => p.organizer_id === user?.id).length === 0 ? (
+                                                        <tr><td colSpan="4" className="text-center text-muted">Aún no has publicado panoramas</td></tr>
+                                                    ) : (
+                                                        panoramas.filter(p => p.organizer_id === user?.id).map(p => (
+                                                            <tr key={p.id} className="cursor-pointer" onClick={() => viewDetail(p.id)}>
+                                                                <td><strong>{p.title}</strong></td>
+                                                                <td>{p.category}</td>
+                                                                <td>{new Date(p.date_time).toLocaleDateString()}</td>
+                                                                <td>
+                                                                    <span className={`badge ${p.status === 'activo' ? 'bg-success' : 'bg-danger'}`}>
+                                                                        {p.status}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div className="card p-4">
+                                        <h4 className="fw-bold mb-3"><i className="bi bi-calendar-check-fill text-accent-cyan me-2"></i>Panoramas a los que me uní</h4>
+                                        <p className="small text-secondary">Eventos en los cuales estás anotado como participante.</p>
+                                        
+                                        <div className="table-responsive">
+                                            <table className="table table-dark table-striped table-hover mt-3">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Título</th>
+                                                        <th>Categoría</th>
+                                                        <th>Fecha</th>
+                                                        <th>Lugar</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {panoramas.filter(p => p.is_joined).length === 0 ? (
+                                                        <tr><td colSpan="4" className="text-center text-muted">No estás inscrito en ningún panorama aún</td></tr>
+                                                    ) : (
+                                                        panoramas.filter(p => p.is_joined).map(p => (
+                                                            <tr key={p.id} className="cursor-pointer" onClick={() => viewDetail(p.id)}>
+                                                                <td><strong>{p.title}</strong></td>
+                                                                <td>{p.category}</td>
+                                                                <td>{new Date(p.date_time).toLocaleDateString()}</td>
+                                                                <td>{p.location}</td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

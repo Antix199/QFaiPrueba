@@ -1,0 +1,7 @@
+{
+  "work_order_id": "WO-20260529-042512",
+  "project_id": "QFAI",
+  "project_name": "Qfai — Plataforma de Panoramas Locales",
+  "requirement": "Desarrollar la plataforma Qfai para publicar y buscar panoramas y planes locales en un mapa interactivo con OpenStreetMap y Leaflet, con persistencia SQLite, backend FastAPI y frontend React + Bootstrap en modo oscuro con estilo Linear.",
+  "started_at": "2026-05-29T04:25:12.651038Z"
+}
